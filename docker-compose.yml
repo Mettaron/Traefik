@@ -17,7 +17,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock  # Для доступу до Docker API
       - ./dynamic.yml:/etc/traefik/dynamic.yml  # Для динамічної конфігурації
     networks:
-      - laba_net
+      - symfony_net
 #      - laba1_net
 #      - laba2_net
     labels:
@@ -29,7 +29,7 @@ services:
 #    driver: bridge
 
 networks:
-  laba_net:
+  symfony_net:
     external: true
 #  laba2_net:
 #    external: true
