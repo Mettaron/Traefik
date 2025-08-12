@@ -6,10 +6,12 @@ services:
       - "--api.insecure=true"
       - "--api.dashboard=true"
       - "--entrypoints.http.address=:80"
+      - "--entrypoints.mysql.address=:3306"
       - "--providers.docker=true"  # Використовуємо Docker як джерело конфігурації
       - "--providers.file.filename=/etc/traefik/dynamic.yml"
     ports:
       - "80:80"  # Порт для HTTP
+      - "3306:3306"
       - "8080:8080"  # Панель управління Traefik
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock  # Для доступу до Docker API

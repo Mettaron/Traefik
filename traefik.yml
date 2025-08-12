@@ -7,6 +7,8 @@ api:
 entryPoints:
   http:
     address: ":80"  # Слухаємо на порту 80
+  mysql:
+    address: ":3306"
 
 providers:
   docker:
