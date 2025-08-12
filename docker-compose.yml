@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   traefik:
     image: "traefik:v2.8"
@@ -18,8 +16,8 @@ services:
       - ./dynamic.yml:/etc/traefik/dynamic.yml  # Для динамічної конфігурації
     networks:
       - symfony_net
-#      - laba1_net
-#      - laba2_net
+    #      - laba1_net
+    #      - laba2_net
     labels:
       - "traefik.enable=true"
 
