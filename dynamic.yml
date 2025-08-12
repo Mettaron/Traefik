@@ -1,0 +1,22 @@
+http:
+  routers:
+    symfony:
+      rule: "Host(`symfony.local`)"
+      service: symfony
+      entryPoints:
+        - http
+#    symfony1:
+#      rule: "Host(`symfony1.local`)"
+#      service: symfony1
+#      entryPoints:
+#        - http
+
+  services:
+    symfony:
+      loadBalancer:
+        servers:
+          - url: "http://symfony-nginx:80"
+#    symfony1:
+#      loadBalancer:
+#        servers:
+#          - url: "http://symfony1-nginx:80"

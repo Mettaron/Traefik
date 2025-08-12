@@ -1,0 +1,18 @@
+# traefik.yml - Статична конфігурація Traefik
+
+api:
+  dashboard: true
+  insecure: true  # Для доступу до панелі управління Traefik
+
+entryPoints:
+  http:
+    address: ":80"  # Слухаємо на порту 80
+
+providers:
+  docker:
+    exposedByDefault: false  # Не публікуємо всі контейнери за замовчуванням
+
+# Логування
+log:
+  level: DEBUG
+  filePath: "/var/log/traefik.log"
