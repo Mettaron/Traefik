@@ -1,20 +1,30 @@
-# traefik.yml - Статична конфігурація Traefik
-
+# Traefik static configuration.
 api:
   dashboard: true
-  insecure: true  # Для доступу до панелі управління Traefik
+  insecure: true # dashboard on :8080, published on 127.0.0.1 only
 
 entryPoints:
   http:
-    address: ":80"  # Слухаємо на порту 80
-  mysql:
-    address: ":3306"
+    address: ":80"
 
 providers:
+  # Services: routers from the labels of their containers (docker/compose.dev.yaml of the template).
   docker:
-    exposedByDefault: false  # Не публікуємо всі контейнери за замовчуванням
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: laba_network
+    watch: true
+  # Shared middlewares + the generated staging fallback routers (dynamic/fallback-*.yml).
+  file:
+    directory: /dynamic
+    watch: true
 
-# Логування
 log:
-  level: DEBUG
-  filePath: "/var/log/traefik.log"
+  level: INFO
+  filePath: /logs/traefik.log
+  format: json
+
+accessLog:
+  filePath: /logs/access.log
+  format: json
+  bufferingSize: 100

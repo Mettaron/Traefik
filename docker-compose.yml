@@ -1,36 +1,32 @@
+# Shared by every Laba service: `make traefik-up` (or `make up`, which starts it first).
+# Its <service>.localhost / <service>.local aliases on laba_network are generated from
+# services.yaml into generated/compose.aliases.yml (see .env COMPOSE_FILE).
+networks:
+  laba_network:
+    name: laba_network
+    external: true # created by `make network`
+
 services:
-  traefik:
-    image: "traefik:v2.8"
-    container_name: traefik
-    command:
-      - "--api.insecure=true"
-      - "--api.dashboard=true"
-      - "--entrypoints.http.address=:80"
-      - "--entrypoints.mysql.address=:3306"
-      - "--providers.docker=true"  # Використовуємо Docker як джерело конфігурації
-      - "--providers.file.filename=/etc/traefik/dynamic.yml"
+  laba_traefik:
+    image: traefik:v3
+    container_name: laba_traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
-      - "80:80"  # Порт для HTTP
-      - "3306:3306"
-      - "8080:8080"  # Панель управління Traefik
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Для доступу до Docker API
-      - ./dynamic.yml:/etc/traefik/dynamic.yml  # Для динамічної конфігурації
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080" # dashboard
     networks:
-      - symfony_net
-    #      - laba1_net
-    #      - laba2_net
+      - laba_network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik.yml:/traefik.yml:ro
+      - ./dynamic:/dynamic:ro
+      - ./logs:/logs
     labels:
       - "traefik.enable=true"
-
-#networks:
-#  laba_net:
-#    name: laba_net
-#    driver: bridge
-
-networks:
-  symfony_net:
-    external: true
-#  laba2_net:
-#    external: true
-
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+      - "traefik.http.routers.traefik.service=api@internal"
+    environment:
+      - TZ=UTC

@@ -1,1 +1,13 @@
-.idea/
+# Personal overrides of services.yaml (branch, real api_key).
+/services.local.yaml
+
+# Generated from services.yaml by bin/gen-traefik (`make gen`).
+/generated/
+/dynamic/fallback-*.yml
+
+/logs/
+/bin/__pycache__/
+/.idea/
+
+# Personal Claude Code settings.
+/.claude/settings.local.json
