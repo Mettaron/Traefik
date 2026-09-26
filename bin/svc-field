@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""Reads the service registry (services.yaml + services.local.yaml), see bin/registry.py.
+
+Usage:
+  svc-field <service> <field>    The resolved value (empty line if unset). Exit 1: unknown service.
+  svc-field --list-local         Services listed in services.local.yaml (the default SERVICES).
+  svc-field --list-all           Every service in services.yaml.
+  svc-field --expand <tok>...    Tokens with groups and `all` expanded into services.
+  svc-field --keys-of <service>  The service's `keys:` map, one VAR=peer per line.
+  svc-field --check              Duplicate db_port / host, unknown group members: exit 1.
+"""
+import sys
+
+import registry
+
+
+def main(args: list[str]) -> int:
+    match args:
+        case ["--list-local"]:
+            print("\n".join(registry.local_services()))
+        case ["--list-all"]:
+            print("\n".join(registry.services()))
+        case ["--expand", *tokens]:
+            print(" ".join(registry.expand(tokens)))
+        case ["--keys-of", service]:
+            print("\n".join(f"{var}={peer}" for var, peer in registry.keys(service).items()))
+        case ["--check"]:
+            problems = registry.check()
+            for problem in problems:
+                print(problem, file=sys.stderr)
+            if problems:
+                return 1
+            print(f"ok: {len(registry.services())} services, no duplicate db_port / host")
+        case [service, field] if not service.startswith("--"):
+            if not registry.exists(service):
+                print(f"unknown service: {service} (not in {registry.BASE_FILE.name})", file=sys.stderr)
+                return 1
+            print(registry.local_host(service) if field == "local_host" else registry.field(service, field))
+        case _:
+            print(__doc__, file=sys.stderr)
+            return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

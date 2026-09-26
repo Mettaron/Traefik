@@ -1,0 +1,14 @@
+# Copy to services.local.yaml (gitignored, personal): same shape as services.yaml, a field set
+# here wins over services.yaml for that service.
+#
+# Listing a service here (even with nothing under it) makes it part of the default SERVICES:
+# `make run` alone clones and starts all of them.
+#   with branch:    clone / checkout use that branch
+#   without branch: leave it on whatever branch it is (a fresh clone: the default branch)
+#
+# api_key: the real value of a peer's inbound key (from whoever is authorized to give it, never
+# committed). `make secrets` (and `make up`) write it into every consumer's .env.local.
+
+example:
+  branch: main
+  # api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
