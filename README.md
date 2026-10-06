@@ -7,6 +7,8 @@
 Laba/
 ├── Traefik/                    # цей репозиторій
 │   ├── Makefile                # усі команди
+│   ├── AGENTS.md, CLAUDE.md    # правила для AI-асистента: карта Laba і правила цього репо
+│                               # (`make claude-md` підключає їх до всього Laba/ через Laba/CLAUDE.md)
 │   ├── services.yaml           # реєстр сервісів (закомічений)
 │   ├── services.local.yaml     # особисті гілки й ключі (gitignored), див. .example
 │   ├── bin/                    # svc-field, svc-secret, gen-traefik (+ registry.py)
@@ -26,6 +28,7 @@ Laba/
 ```bash
 cp services.local.yaml.example services.local.yaml   # перелічи потрібні сервіси (і гілки)
 make run                                              # clone того, чого ще нема + up
+make claude-md                                        # один раз: правила AI-асистента для всього Laba/
 ```
 
 - Traefik: http://traefik.localhost:8080/dashboard/
@@ -53,6 +56,7 @@ make run                                              # clone того, чого
 | `make traefik-up` / `traefik-down` | лише Traefik |
 | `make secrets` | пише міжсервісні API-ключі в `.env.local` сервісів |
 | `make rekey SERVICE=x` | після зміни `api_key` сервісу `x` — оновлює `.env.local` його споживачів |
+| `make claude-md` | створює `Laba/CLAUDE.md` з `@Traefik/AGENTS.md`: Claude Code підхоплює його в кожному репозиторії під `Laba/` |
 
 ## Реєстр сервісів
 

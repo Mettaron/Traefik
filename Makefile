@@ -18,12 +18,16 @@ if [ -n "$(BRANCH)" ]; then echo "$(BRANCH)"; else $(SVC_FIELD) $(1) branch; fi
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help network gen traefik-up traefik-down check clone checkout run up stop down ps secrets rekey
+.PHONY: help network gen traefik-up traefik-down check clone checkout run up stop down ps secrets rekey claude-md
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 	@echo ""
 	@echo "SERVICES=$(SERVICES)"
+
+claude-md: ## Create ../CLAUDE.md: every Claude Code session under Laba/ then loads AGENTS.md of this repo
+	@if [ -e ../CLAUDE.md ]; then echo "../CLAUDE.md already exists, left as is"; \
+	else printf '# CLAUDE.md\n\n@Traefik/AGENTS.md\n' > ../CLAUDE.md && echo "created ../CLAUDE.md -> Traefik/AGENTS.md"; fi
 
 network: ## Create laba_network if it does not exist
 	@docker network inspect $(NETWORK) >/dev/null 2>&1 || docker network create $(NETWORK)
