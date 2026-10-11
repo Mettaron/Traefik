@@ -70,7 +70,7 @@ groups:
 
 payment-gateway:
   repo: Mettaron/payment-gateway
-  db_port: 33061
+  db_port: 55001
   staging_origin: https://payment-gateway.stage.example
   keys:
     CMS_API_KEY: cms

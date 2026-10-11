@@ -9,7 +9,7 @@
 # Fields (all optional except repo):
 #   repo            GitHub repo, cloned as git@github.com:<repo>.git
 #   db_port         host port of the service's database (127.0.0.1 only) for DB GUI clients;
-#                   one series: 33061, 33062... Not used by the app itself.
+#                   one series: 55001, 55002... (55000: template-symfony-service). Not used by the app itself.
 #   local_host      host for a browser, default <name>.localhost. Its twin <name>.local is for
 #                   server-to-server calls: inside a container curl resolves *.localhost to the
 #                   container itself (RFC 6761), so a *_URL of another service must use .local.
@@ -29,7 +29,12 @@ groups:
 
 # example:
 #   repo: Mettaron/example-service
-#   db_port: 33061
+#   db_port: 55001
 #   staging_origin: https://example.stage.laba.dev
 #   keys:
 #     CMS_API_KEY: cms
+
+# Authentication of Laba users: OAuth2 server (accounts, login, tokens).
+auth:
+  repo: Mettaron/Auth
+  db_port: 55001
