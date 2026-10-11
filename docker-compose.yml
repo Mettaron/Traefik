@@ -30,3 +30,48 @@ services:
       - "traefik.http.routers.traefik.service=api@internal"
     environment:
       - TZ=UTC
+
+  # Redis cache shared between services (laba_client.global_cache): the owner service writes,
+  # the others read. Services reach it on laba_network: REDIS_CACHE_DSN=redis://laba_redis:6379.
+  # A cache only: nothing is saved to disk, a restart starts it empty.
+  laba_redis:
+    image: redis:7.2-alpine
+    container_name: laba_redis
+    restart: unless-stopped
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379" # for GUI clients on the host
+    networks:
+      - laba_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Web UI of laba_redis: keys, values, TTL, edit/delete. http://redis.localhost
+  # The laba_redis connection is preconfigured (RI_REDIS_*); its settings are kept in a volume.
+  laba_redisinsight:
+    image: redis/redisinsight:latest
+    container_name: laba_redisinsight
+    restart: unless-stopped
+    depends_on:
+      laba_redis:
+        condition: service_healthy
+    environment:
+      - RI_REDIS_HOST=laba_redis
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=laba_redis
+    volumes:
+      - laba_redisinsight:/data
+    networks:
+      - laba_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.redisinsight.entrypoints=http"
+      - "traefik.http.routers.redisinsight.rule=Host(`redis.localhost`)"
+      - "traefik.http.services.redisinsight.loadbalancer.server.port=5540"
+
+volumes:
+  laba_redisinsight:
+    name: laba_redisinsight

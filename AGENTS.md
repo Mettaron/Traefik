@@ -42,6 +42,9 @@ Laba/
 - **Хости:** `<service>.localhost` — для браузера, `<service>.local` — для викликів між сервісами
   (усередині контейнера `*.localhost` резолвиться в сам контейнер). Будь-яка `*_URL` до іншого
   сервісу — на `.local`.
+- **Спільний Redis** `laba_redis` (кеш `global_cache` між сервісами) — у `docker-compose.yml` поруч
+  із Traefik; сервіси звертаються до нього `redis://laba_redis:6379`. Лише кеш, без збереження на диск.
+  Панель — Redis Insight `laba_redisinsight` на `redis.localhost`.
 
 ## Перевірка
 

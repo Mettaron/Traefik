@@ -1,7 +1,7 @@
 # Laba: локальна інфраструктура сервісів
 
-Спільна dev-інфраструктура всіх сервісів Laba: один Traefik, одна мережа `laba_network`, реєстр
-сервісів `services.yaml` і команди, що клонують та піднімають сервіси.
+Спільна dev-інфраструктура всіх сервісів Laba: один Traefik, спільний Redis, одна мережа `laba_network`,
+реєстр сервісів `services.yaml` і команди, що клонують та піднімають сервіси.
 
 ```
 Laba/
@@ -12,7 +12,7 @@ Laba/
 │   ├── services.yaml           # реєстр сервісів (закомічений)
 │   ├── services.local.yaml     # особисті гілки й ключі (gitignored), див. .example
 │   ├── bin/                    # svc-field, svc-secret, gen-traefik (+ registry.py)
-│   ├── docker-compose.yml      # сам Traefik
+│   ├── docker-compose.yml      # Traefik, спільний Redis (laba_redis) і Redis Insight
 │   ├── traefik.yml             # статичний конфіг Traefik
 │   ├── dynamic/                # спільні middleware + згенеровані fallback-роутери
 │   └── generated/              # згенеровані aliases Traefik (gitignored)
@@ -53,7 +53,9 @@ make claude-md                                        # один раз: пра�
 | `make ps` | контейнери в `laba_network` |
 | `make check` | реєстр без дублікатів `db_port` / хостів і невідомих учасників груп |
 | `make gen` | генерує aliases Traefik і fallback-роутери з реєстру |
-| `make traefik-up` / `traefik-down` | лише Traefik |
+| `make traefik-up` / `traefik-down` | лише Traefik, спільний Redis і його панель Redis Insight |
+| `make redis-cli` | `redis-cli` спільного Redis |
+| `make status` | стан усіх репозиторіїв Laba: незакомічене, не запушене, комітів після останнього тегу |
 | `make secrets` | пише міжсервісні API-ключі в `.env.local` сервісів |
 | `make rekey SERVICE=x` | після зміни `api_key` сервісу `x` — оновлює `.env.local` його споживачів |
 | `make claude-md` | створює `Laba/CLAUDE.md` з `@Traefik/AGENTS.md`: Claude Code підхоплює його в кожному репозиторії під `Laba/` |
@@ -91,6 +93,20 @@ Aliases Traefik і fallback-роутери генеруються з нього 
 
 Обидва хости — aliases контейнера `laba_traefik` у `laba_network`, тож працюють з будь-якого
 контейнера мережі.
+
+## Спільний Redis (`global_cache`)
+
+`laba_redis` — Redis-кеш, спільний для всіх сервісів (`laba_client.global_cache` з `laba/client-bundle`):
+сервіс-власник даних пише в нього, інші читають. Піднімається разом із Traefik.
+
+- у сервісі: `REDIS_CACHE_DSN=redis://laba_redis:6379` у `.env.local` і секція `global_cache`
+  у `config/packages/laba_client.yaml`;
+- з хоста (GUI-клієнт): `127.0.0.1:6379` (`REDIS_PORT` у `.env`), консоль — `make redis-cli`.
+- у браузері: <http://redis.localhost> — Redis Insight (`laba_redisinsight`): ключі, значення, TTL,
+  редагування й видалення. З'єднання з `laba_redis` уже налаштоване; при першому відкритті
+  Redis Insight попросить прийняти свою ліцензію.
+
+Це лише кеш: на диск нічого не зберігається, після перезапуску контейнер порожній.
 
 ## Fallback на stage
 

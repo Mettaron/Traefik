@@ -18,7 +18,7 @@ if [ -n "$(BRANCH)" ]; then echo "$(BRANCH)"; else $(SVC_FIELD) $(1) branch; fi
 endef
 
 .DEFAULT_GOAL := help
-.PHONY: help network gen traefik-up traefik-down check clone checkout run up stop down ps secrets rekey claude-md
+.PHONY: help network gen traefik-up traefik-down redis-cli status check clone checkout run up stop down ps secrets rekey claude-md
 
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -35,12 +35,20 @@ network: ## Create laba_network if it does not exist
 gen: ## Generate the Traefik aliases and staging fallback routers from services.yaml
 	@python3 bin/gen-traefik
 
-traefik-up: network gen ## Start (or update) Traefik: shared by all services
+traefik-up: network gen ## Start (or update) Traefik, the shared Redis (laba_redis) and its UI: used by all services
 	docker compose up -d
 	@echo "Traefik dashboard: http://traefik.localhost:$${TRAEFIK_DASHBOARD_PORT:-8080}/dashboard/"
+	@echo "Shared Redis: redis://laba_redis:6379 (services), 127.0.0.1:$${REDIS_PORT:-6379} (host)"
+	@echo "Redis UI (Redis Insight): http://redis.localhost"
 
-traefik-down: ## Stop Traefik
+traefik-down: ## Stop Traefik, the shared Redis and its UI
 	docker compose down
+
+redis-cli: ## Open redis-cli of the shared Redis (laba_redis)
+	docker exec -it laba_redis redis-cli
+
+status: ## State of every Laba repository: uncommitted, unpushed, commits after the last tag
+	@python3 bin/laba-status
 
 check: ## Check services.yaml: duplicate db_port / host, unknown group members
 	@$(SVC_FIELD) --check

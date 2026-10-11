@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+"""State of every git repository under Laba/: uncommitted changes, unpushed commits,
+commits after the last tag, the last commit.
+
+    laba-status                 human-readable table (make status)
+    laba-status --session-start the same as SessionStart hook JSON for Claude Code,
+                                together with Laba/PROGRESS.md
+    laba-status --stop-check    Stop hook: asks Claude to update PROGRESS.md when repository
+                                files or commits are newer than it
+
+Standard library only, like the other scripts in bin/.
+"""
+
+import json
+import os
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+LABA = Path(__file__).resolve().parents[2]
+PROGRESS = LABA / "PROGRESS.md"
+
+
+def git(repo: Path, *args: str) -> str:
+    result = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    return result.stdout.strip() if result.returncode == 0 else ""
+
+
+def repositories() -> list[Path]:
+    found = []
+    for candidate in [LABA / "Traefik", *sorted(LABA.glob("Bundles/*")), *sorted(LABA.glob("Services/*")), LABA / "project"]:
+        if (candidate / ".git").exists():
+            found.append(candidate)
+    return found
+
+
+def changed_files(repo: Path) -> list[Path]:
+    """Paths from "git status -z": "XY path", a rename also followed by its old path."""
+    result = subprocess.run(["git", "-C", str(repo), "status", "-z", "--untracked-files=all"], capture_output=True, text=True)
+    entries = iter(result.stdout.split("\0"))
+    files = []
+    for entry in entries:
+        if len(entry) < 4:
+            continue
+        files.append(repo / entry[3:])
+        if entry[0] in "RC":
+            next(entries, None)  # the old path of a rename or copy
+    return files
+
+
+def version_key(tag: str) -> tuple:
+    return tuple(int(part) if part.isdigit() else 0 for part in tag.lstrip("v").split("."))
+
+
+def latest_tag(repo: Path) -> tuple[str, str]:
+    """Latest version tag and its commit: from origin (tags are created on GitHub), else local."""
+    try:
+        result = subprocess.run(["git", "-C", str(repo), "ls-remote", "--tags", "origin"], capture_output=True, text=True, timeout=5)
+        lines = result.stdout.splitlines() if result.returncode == 0 else []
+    except subprocess.TimeoutExpired:
+        lines = []
+    commits: dict[str, str] = {}
+    for line in lines:
+        sha, ref = line.split("\t")
+        name = ref.removeprefix("refs/tags/")
+        if name.endswith("^{}"):
+            commits[name[:-3]] = sha  # annotated tag: the commit it points to
+        else:
+            commits.setdefault(name, sha)
+    if not commits:
+        commits = {tag: git(repo, "rev-list", "-n1", tag) for tag in git(repo, "tag").splitlines()}
+    if not commits:
+        return "-", ""
+    tag = max(commits, key=version_key)
+    return tag, commits[tag]
+
+
+def state(repo: Path) -> dict:
+    tag, commit = latest_tag(repo)
+    after_tag = git(repo, "rev-list", "--count", f"{commit}..HEAD") if commit else ""
+    return {
+        "name": str(repo.relative_to(LABA)),
+        "branch": git(repo, "rev-parse", "--abbrev-ref", "HEAD"),
+        "changed": len(changed_files(repo)),
+        "unpushed": git(repo, "rev-list", "--count", "@{u}..HEAD") or "?",
+        "tag": tag,
+        "after_tag": after_tag or "?" if commit else "-",
+        "last": git(repo, "log", "-1", "--format=%cd %s", "--date=format:%Y-%m-%d"),
+    }
+
+
+def table() -> str:
+    with ThreadPoolExecutor() as pool:
+        rows = list(pool.map(state, repositories()))
+    width = max(len(r["name"]) for r in rows)
+    lines = [f"{'репозиторій':<{width}}  незакомічено  не запушено  тег (комітів після)  останній коміт"]
+    for r in rows:
+        lines.append(
+            f"{r['name']:<{width}}  {r['changed']:>12}  {r['unpushed']:>11}  {r['tag'] + ' (' + r['after_tag'] + ')':<19}  {r['last']}"
+        )
+    return "\n".join(lines)
+
+
+def newest_change() -> float:
+    """Newest mtime of a changed file or commit time, across all repositories."""
+    newest = 0.0
+    for repo in repositories():
+        for file in changed_files(repo):
+            # A deleted file: its directory changed when it was removed.
+            existing = next((p for p in (file, *file.parents) if p.exists()), repo)
+            newest = max(newest, existing.stat().st_mtime)
+        commit = git(repo, "log", "-1", "--format=%ct")
+        if commit:
+            newest = max(newest, float(commit))
+    return newest
+
+
+def session_start() -> None:
+    progress = PROGRESS.read_text() if PROGRESS.exists() else "(PROGRESS.md ще немає)"
+    context = f"Стан репозиторіїв Laba (Traefik/bin/laba-status):\n{table()}\n\nLaba/PROGRESS.md:\n{progress}"
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": context}}, ensure_ascii=False))
+
+
+def stop_check() -> None:
+    hook = json.load(sys.stdin) if not sys.stdin.isatty() else {}
+    if hook.get("stop_hook_active"):
+        return  # already asked once in this stop: never loop
+    progress_mtime = PROGRESS.stat().st_mtime if PROGRESS.exists() else 0.0
+    if newest_change() <= progress_mtime:
+        return
+    reason = (
+        "У репозиторіях Laba є зміни новіші за Laba/PROGRESS.md. Онови його за правилами в Laba/CLAUDE.md: "
+        "що зроблено (журнал), що почато й не завершено, що заплановано. Якщо зміни дрібні й нічого "
+        "не варто записувати — онови лише дату «Оновлено»."
+    )
+    print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    os.chdir(LABA)
+    if "--session-start" in sys.argv:
+        session_start()
+    elif "--stop-check" in sys.argv:
+        stop_check()
+    else:
+        print(table())
