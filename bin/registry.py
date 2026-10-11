@@ -5,8 +5,10 @@ Not a general YAML parser: both files keep a flat shape on purpose
 
     <service>:
       <field>: <value>
-      keys:
+      keys:                 # services.yaml: env var -> the peer it calls
         <VAR>: <peer>
+      api_keys:             # services.local.yaml only: calling service -> its key to this one
+        <caller>: <key>
 
 so this stays a few regexes instead of a PyYAML dependency. This module is
 the one place that knows the format; bin/svc-field, bin/svc-secret and
@@ -89,16 +91,36 @@ def internal_host(service: str) -> str:
     return local_host(service).removesuffix(".localhost") + ".local"
 
 
-def keys(service: str) -> dict[str, str]:
-    """The service's `keys:` map: env var it declares -> the peer whose api_key it holds."""
-    block = _block(_read(BASE_FILE), service) or ""
-    m = re.search(r"^([ \t]+)keys:[ \t]*\n((?:\1[ \t]+.*\n?|\n)*)", block, re.MULTILINE)
+def _map(block: str, name: str) -> dict[str, str]:
+    """A one-level map under a service: `name:` followed by more indented `key: value` lines."""
+    m = re.search(rf"^([ \t]+){re.escape(name)}:[ \t]*\n((?:\1[ \t]+.*\n?|[ \t]*#.*\n?|\n)*)", block, re.MULTILINE)
     if not m:
         return {}
     return {
         k.group(1): _clean(k.group(2))
         for k in re.finditer(r"^[ \t]+([A-Za-z0-9_.-]+):[ \t]*(.*)$", m.group(2), re.MULTILINE)
     }
+
+
+def keys(service: str) -> dict[str, str]:
+    """The service's `keys:` map (services.yaml): env var it declares -> the peer it calls with it."""
+    return _map(_block(_read(BASE_FILE), service) or "", "keys")
+
+
+def api_keys(service: str) -> dict[str, str]:
+    """The service's `api_keys:` map (services.local.yaml only, real values): calling service -> its key."""
+    return _map(_block(_read(LOCAL_FILE), service) or "", "api_keys")
+
+
+def consumers(service: str) -> list[str]:
+    """Services whose `keys:` call this one."""
+    return [s for s in services() if s != service and service in keys(s).values()]
+
+
+def inbound_var(caller: str) -> str:
+    """Env var of the called service with the key of `caller`: what its
+    laba_service.api_access.clients.<caller>.key reads, e.g. API_CLIENT_CMS_KEY."""
+    return "API_CLIENT_" + re.sub(r"[^A-Z0-9]", "_", caller.upper()) + "_KEY"
 
 
 def group(name: str) -> list[str]:
@@ -132,6 +154,15 @@ def check() -> list[str]:
         for member in _clean(m.group(2)).split():
             if member not in all_services:
                 problems.append(f"group {m.group(1)}: unknown service {member}")
+    for s in all_services:
+        for var, peer in keys(s).items():
+            if peer not in all_services:
+                problems.append(f"{s}: keys: {var} points at unknown service {peer}")
+    for s in local_services():
+        callers = consumers(s)
+        for caller in api_keys(s):
+            if caller not in callers:
+                problems.append(f"services.local.yaml: {s}: api_keys: {caller} does not call {s} (no `keys:` of {caller} points at it)")
     for label, value_of in (("db_port", lambda s: field(s, "db_port")), ("host", local_host)):
         seen: dict[str, str] = {}
         for s in all_services:

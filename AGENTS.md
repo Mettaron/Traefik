@@ -37,8 +37,10 @@ Laba/
   лише разом зі зміною `registry.py`. Скрипти `bin/` — Python 3 лише зі стандартною бібліотекою.
 - **Згенероване не правиться вручну:** `generated/` і `dynamic/fallback-*.yml` створює `make gen`
   з реєстру. Спільні middleware — у `dynamic/middleware.yml`, його можна правити.
-- **Секрети:** справжні `api_key` — лише в `services.local.yaml` (gitignored); у `services.yaml`
-  завжди `api_key: null`. У `.env.local` сервісів ключі пише `make secrets`, а не рука.
+- **Секрети:** ключ на кожну пару «хто → кого». У `services.yaml` — лише `keys:` того, хто викликає
+  (змінна → сервіс); справжні значення — лише в `services.local.yaml` (gitignored), `api_keys:` у того,
+  кого викликають. У `.env.local` обох сторін ключі пише `make secrets` (у того, кого викликають, —
+  `API_CLIENT_<ХТО>_KEY` для `laba_service.api_access`), а не рука.
 - **Хости:** `<service>.localhost` — для браузера, `<service>.local` — для викликів між сервісами
   (усередині контейнера `*.localhost` резолвиться в сам контейнер). Будь-яка `*_URL` до іншого
   сервісу — на `.local`.

@@ -100,6 +100,6 @@ ps: ## Containers on laba_network
 secrets: ## Write the inter-service API keys of SERVICES into their .env.local
 	@for s in $(SERVICES); do python3 bin/svc-secret $$s || true; done
 
-rekey: ## After changing SERVICE's api_key in services.local.yaml: update its consumers (make rekey SERVICE=cms)
-	@[ -n "$(SERVICE)" ] || { echo "usage: make rekey SERVICE=<service whose api_key changed>" >&2; exit 1; }
+rekey: ## After changing SERVICE's api_keys in services.local.yaml: update it and its callers (make rekey SERVICE=cms)
+	@[ -n "$(SERVICE)" ] || { echo "usage: make rekey SERVICE=<service whose api_keys changed>" >&2; exit 1; }
 	python3 bin/svc-secret --changed $(SERVICE)

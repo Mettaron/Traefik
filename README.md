@@ -57,7 +57,7 @@ make claude-md                                        # один раз: пра�
 | `make redis-cli` | `redis-cli` спільного Redis |
 | `make status` | стан усіх репозиторіїв Laba: незакомічене, не запушене, комітів після останнього тегу |
 | `make secrets` | пише міжсервісні API-ключі в `.env.local` сервісів |
-| `make rekey SERVICE=x` | після зміни `api_key` сервісу `x` — оновлює `.env.local` його споживачів |
+| `make rekey SERVICE=x` | після зміни `api_keys` сервісу `x` — оновлює `.env.local` його і тих, хто його викликає |
 | `make claude-md` | створює `Laba/CLAUDE.md` з `@Traefik/AGENTS.md`: Claude Code підхоплює його в кожному репозиторії під `Laba/` |
 
 ## Реєстр сервісів
@@ -72,7 +72,6 @@ payment-gateway:
   repo: Mettaron/payment-gateway
   db_port: 33061
   staging_origin: https://payment-gateway.stage.example
-  api_key: null
   keys:
     CMS_API_KEY: cms
 ```
@@ -81,7 +80,7 @@ Aliases Traefik і fallback-роутери генеруються з нього 
 сам), вручну їх не ведемо.
 
 `services.local.yaml` (gitignored) має ту саму форму і перекриває поля — як `.env.local`:
-`branch:` для clone/checkout, справжні `api_key:`. Сервіс, перелічений там, входить у `SERVICES`
+`branch:` для clone/checkout, справжні ключі `api_keys:`. Сервіс, перелічений там, входить у `SERVICES`
 за замовчуванням.
 
 ## `.localhost` і `.local`
@@ -117,11 +116,37 @@ Aliases Traefik і fallback-роутери генеруються з нього 
 
 ## API-ключі між сервісами
 
-- `services.yaml`: у сервісу, якого викликають з ключем, — `api_key: null` (лише мітка, значення
-  не комітимо); у того, хто викликає, — `keys:` (`ЗМІННА_В_.env: сервіс`).
-- `services.local.yaml`: справжнє значення, `<service>: api_key: ...`.
-- `make secrets` (і `make up`) пише значення в `.env.local` споживачів, в окремий позначений блок;
-  рядки, вписані вручну, не чіпає. Ключ без значення пропускається з попередженням.
+Окремий ключ на кожну пару «хто викликає → кого»: витік одного ключа не відкриває інших сервісів,
+а сервіс, якого викликають, знає, хто саме прийшов (`laba_service.api_access` з `laba/service-bundle`
+дає йому роль за ключем).
+
+- `services.yaml`: той, хто викликає, оголошує `keys:` — змінна в його `.env.local` і сервіс, до якого
+  вона: `USERS_API_KEY: users`. Значень тут немає.
+- `services.local.yaml`: справжні значення — у сервісу, якого викликають, `api_keys:` по ключу на
+  кожного, хто його викликає:
+
+  ```yaml
+  users:
+    api_keys:
+      cms: <ключ>        # новий ключ: python3 -c 'import secrets; print(secrets.token_hex(32))'
+      payment: <ключ>
+  ```
+
+- `make secrets` (і `make up`) пише ключ пари обом сторонам, в окремий позначений блок `.env.local`:
+  тому, хто викликає, — у його змінну з `keys:` (`USERS_API_KEY`); тому, кого викликають, —
+  `API_CLIENT_<ХТО>_KEY` (`API_CLIENT_CMS_KEY`), яку читає його конфіг:
+
+  ```yaml
+  # config/packages/laba_service.yaml сервісу users
+  laba_service:
+      api_access:
+          clients:
+              cms: { key: '%env(API_CLIENT_CMS_KEY)%', description: '...' }
+  ```
+
+  Рядки, вписані вручну, не чіпає; ключ без значення пропускається з попередженням.
+- Змінили ключі сервісу — `make rekey SERVICE=users`: оновить його і всіх, хто його викликає.
+- `make check` знаходить у `api_keys` сервіс, який насправді його не викликає (немає `keys:`).
 
 ## Новий сервіс
 

@@ -6,9 +6,12 @@
 #   with branch:    clone / checkout use that branch
 #   without branch: leave it on whatever branch it is (a fresh clone: the default branch)
 #
-# api_key: the real value of a peer's inbound key (from whoever is authorized to give it, never
-# committed). `make secrets` (and `make up`) write it into every consumer's .env.local.
+# api_keys: real keys of the services calling this one (a key per caller, from whoever is authorized
+# to give it, never committed), a caller listed by its `keys:` in services.yaml. `make secrets`
+# (and `make up`) write each key to both sides: the caller's env var and API_CLIENT_<CALLER>_KEY here.
+# A new key: python3 -c 'import secrets; print(secrets.token_hex(32))'
 
 example:
   branch: main
-  # api_key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  # api_keys:
+  #   cms: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
