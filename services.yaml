@@ -38,3 +38,16 @@ groups:
 auth:
   repo: Mettaron/Auth
   db_port: 55001
+
+# Account data of Laba users (name, language, country), by the userId of auth.
+account:
+  repo: Mettaron/Account
+  db_port: 55002
+
+# API of the user-facing frontend (BFF): registration, login, the user's own data, over auth and account.
+front-api:
+  repo: Mettaron/FrontApi
+  db_port: 55003
+  keys:
+    AUTH_API_KEY: auth
+    ACCOUNT_API_KEY: account
