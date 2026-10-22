@@ -51,3 +51,8 @@ front-api:
   keys:
     AUTH_API_KEY: auth
     ACCOUNT_API_KEY: account
+
+# Galaxy-scale space game based on the Milky Way.
+game:
+  repo: Mettaron/Game
+  db_port: 55004
