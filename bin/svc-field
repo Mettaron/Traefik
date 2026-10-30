@@ -3,12 +3,14 @@
 
 Usage:
   svc-field <service> <field>    The resolved value (empty line if unset). Exit 1: unknown service.
+  svc-field --dir <service>      Where its repo is cloned, relative to Laba/Traefik (../<dir>/<service>).
   svc-field --list-local         Services listed in services.local.yaml (the default SERVICES).
   svc-field --list-all           Every service in services.yaml.
   svc-field --expand <tok>...    Tokens with groups and `all` expanded into services.
   svc-field --keys-of <service>  The service's `keys:` map, one VAR=peer per line.
   svc-field --check              Duplicate db_port / host, unknown group members: exit 1.
 """
+import os
 import sys
 
 import registry
@@ -22,6 +24,11 @@ def main(args: list[str]) -> int:
             print("\n".join(registry.services()))
         case ["--expand", *tokens]:
             print(" ".join(registry.expand(tokens)))
+        case ["--dir", service]:
+            if not registry.exists(service):
+                print(f"unknown service: {service} (not in {registry.BASE_FILE.name})", file=sys.stderr)
+                return 1
+            print(os.path.relpath(registry.repo_dir(service), registry.ROOT))
         case ["--keys-of", service]:
             print("\n".join(f"{var}={peer}" for var, peer in registry.keys(service).items()))
         case ["--check"]:

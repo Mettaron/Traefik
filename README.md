@@ -17,6 +17,7 @@ Laba/
 │   ├── dynamic/                # спільні middleware + згенеровані fallback-роутери
 │   └── generated/              # згенеровані aliases Traefik (gitignored)
 ├── Services/<service>/         # сервіси, створені з template-symfony-service
+├── Frontends/<name>/           # фронтенди (`dir: Frontends` у реєстрі), напр. front — сайт і гра
 └── Bundles/                    # бандли
 ```
 
@@ -45,7 +46,7 @@ make claude-md                                        # один раз: пра�
 | Команда | Що робить |
 |---|---|
 | `make run` | `clone` + `up` одним кроком |
-| `make clone` | клонує відсутні `SERVICES` у `../Services/` на їхній гілці |
+| `make clone` | клонує відсутні `SERVICES` у `../<dir>/` (за замовчуванням `../Services/`) на їхній гілці |
 | `make checkout` | перемикає вже склоновані `SERVICES` на їхню гілку |
 | `make up` | Traefik + ключі (`secrets`) + `make up` кожного сервісу; попереджає, якщо гілка не та |
 | `make stop` | зупиняє `SERVICES`, контейнери лишаються в Docker Desktop |

@@ -22,7 +22,8 @@ import re
 ROOT = pathlib.Path(__file__).resolve().parent.parent  # Laba/Traefik
 BASE_FILE = ROOT / "services.yaml"
 LOCAL_FILE = ROOT / "services.local.yaml"
-SERVICES_DIR = ROOT.parent / "Services"  # every service repo: Laba/Services/<service>
+LABA = ROOT.parent
+DEFAULT_DIR = "Services"  # where a service repo is cloned unless its `dir:` says otherwise
 
 # Top-level sections that are not services.
 NON_SERVICE_SECTIONS = {"groups"}
@@ -85,6 +86,11 @@ def field(service: str, name: str) -> str:
 def local_host(service: str) -> str:
     """Host for a browser (<service>.localhost unless overridden); <name>.local is its server-to-server twin."""
     return field(service, "local_host") or f"{service}.localhost"
+
+
+def repo_dir(service: str) -> pathlib.Path:
+    """Where the service's repo is cloned: Laba/<dir>/<service>, `dir:` defaulting to Services."""
+    return LABA / (field(service, "dir") or DEFAULT_DIR) / service
 
 
 def internal_host(service: str) -> str:

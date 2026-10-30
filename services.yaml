@@ -4,10 +4,13 @@
 #
 # A service is a repo created from template-symfony-service, cloned into Laba/Services/<name>;
 # <name> is its SERVICE_NAME (.env): compose project laba_<name>, containers laba_<name>_app,
-# laba_<name>_worker, laba_<name>_db.
+# laba_<name>_worker, laba_<name>_db. A frontend is a repo of its own (Laba/Frontends/<name>) with
+# the same `make up` / `stop` / `down`.
 #
 # Fields (all optional except repo):
 #   repo            GitHub repo, cloned as git@github.com:<repo>.git
+#   dir             folder of Laba/ the repo is cloned into (Laba/<dir>/<name>), default Services;
+#                   Frontends for the frontends.
 #   db_port         host port of the service's database (127.0.0.1 only) for DB GUI clients;
 #                   one series: 55001, 55002... (55000: template-symfony-service). Not used by the app itself.
 #   local_host      host for a browser, default <name>.localhost. Its twin <name>.local is for
@@ -51,8 +54,19 @@ front-api:
   keys:
     AUTH_API_KEY: auth
     ACCOUNT_API_KEY: account
+    CMS_API_KEY: cms
 
 # Galaxy-scale space game based on the Milky Way.
 game:
   repo: Mettaron/Game
   db_port: 55004
+
+# Content of the frontends: pages of blocks, translations by keys, SEO, news, the development progress.
+cms:
+  repo: Mettaron/Cms
+  db_port: 55005
+
+# Public site (registration, devlog, development progress) and later the game: frontends over front-api.
+front:
+  repo: Mettaron/Front
+  dir: Frontends

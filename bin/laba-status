@@ -29,7 +29,7 @@ def git(repo: Path, *args: str) -> str:
 
 def repositories() -> list[Path]:
     found = []
-    for candidate in [LABA / "Traefik", *sorted(LABA.glob("Bundles/*")), *sorted(LABA.glob("Services/*")), LABA / "project"]:
+    for candidate in [LABA / "Traefik", *sorted(LABA.glob("Bundles/*")), *sorted(LABA.glob("Services/*")), *sorted(LABA.glob("Frontends/*")), LABA / "project"]:
         if (candidate / ".git").exists():
             found.append(candidate)
     return found
