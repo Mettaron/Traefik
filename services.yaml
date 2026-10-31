@@ -55,6 +55,7 @@ front-api:
     AUTH_API_KEY: auth
     ACCOUNT_API_KEY: account
     CMS_API_KEY: cms
+    GAME_API_KEY: game
 
 # Galaxy-scale space game based on the Milky Way.
 game:
@@ -69,4 +70,9 @@ cms:
 # Public site (registration, devlog, development progress) and later the game: frontends over front-api.
 front:
   repo: Mettaron/Front
+  dir: Frontends
+
+# The game in the browser: the map of the world over front-api (Vite + React + three.js).
+front-game:
+  repo: Mettaron/FrontGame
   dir: Frontends
