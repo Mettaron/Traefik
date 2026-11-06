@@ -8,7 +8,7 @@ Usage:
   svc-field --list-all           Every service in services.yaml.
   svc-field --expand <tok>...    Tokens with groups and `all` expanded into services.
   svc-field --keys-of <service>  The service's `keys:` map, one VAR=peer per line.
-  svc-field --check              Duplicate db_port / host, unknown group members: exit 1.
+  svc-field --check              Duplicate db_port / host, unknown group members, a wrong instance_of: exit 1.
 """
 import os
 import sys

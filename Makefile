@@ -60,6 +60,8 @@ check: ## Check services.yaml: duplicate db_port / host, unknown group members
 clone: ## Clone the SERVICES not cloned yet into ../<dir>/ (default ../Services/), at their branch
 	@for s in $(SERVICES); do \
 		d=$$($(call dir_for,$$s)) || exit 1; \
+		of=$$($(SVC_FIELD) $$s instance_of); \
+		if [ -n "$$of" ]; then echo "--- $$s: an instance of $$of, run from its repo"; continue; fi; \
 		if [ -d "$$d" ]; then \
 			echo "--- $$s: already cloned in $$d (branch $$(git -C $$d branch --show-current)), 'make checkout' switches it"; \
 			continue; \
@@ -76,6 +78,7 @@ checkout: ## Switch the cloned SERVICES to their branch (services.local.yaml or 
 	@for s in $(SERVICES); do \
 		d=$$($(call dir_for,$$s)) || exit 1; \
 		[ -d "$$d" ] || { echo "$$s: not cloned, 'make clone' uses its branch" >&2; exit 1; }; \
+		[ -z "$$($(SVC_FIELD) $$s instance_of)" ] || continue; \
 		b=$$($(call branch_for,$$s)); \
 		if [ -z "$$b" ]; then echo "--- $$s: no branch set, left as is"; continue; fi; \
 		echo "--- $$s: checkout $$b"; \
@@ -91,15 +94,26 @@ up: check traefik-up secrets ## Start Traefik + SERVICES (each through its own `
 		b=$$($(call branch_for,$$s)); current=$$(git -C "$$d" branch --show-current); \
 		if [ -n "$$b" ] && [ "$$current" != "$$b" ]; then echo "WARNING: $$s is on '$$current', not '$$b': make checkout SERVICES=$$s"; fi; \
 		echo "--- $$s: up"; \
-		$(MAKE) --no-print-directory -C "$$d" up NO_TRAEFIK=1 || exit 1; \
+		r=$$($(SVC_FIELD) $$s region); \
+		if [ -n "$$($(SVC_FIELD) $$s instance_of)" ]; then \
+			$(MAKE) --no-print-directory -C "$$d" region-up r=$$r cpus=$$($(SVC_FIELD) $$s cpus) || exit 1; \
+		else \
+			$(MAKE) --no-print-directory -C "$$d" up NO_TRAEFIK=1 || exit 1; \
+		fi; \
 		echo "    http://$$($(SVC_FIELD) $$s local_host)"; \
 	done
 
 stop: ## Stop SERVICES, keeping their containers (Docker Desktop still lists them)
-	@for s in $(SERVICES); do $(MAKE) --no-print-directory -C "$$($(call dir_for,$$s))" stop || exit 1; done
+	@for s in $(SERVICES); do \
+		r=$$($(SVC_FIELD) $$s region); \
+		$(MAKE) --no-print-directory -C "$$($(call dir_for,$$s))" $$([ -n "$$($(SVC_FIELD) $$s instance_of)" ] && echo "region-stop r=$$r" || echo stop) || exit 1; \
+	done
 
 down: ## Stop and remove SERVICES' containers (Traefik keeps running)
-	@for s in $(SERVICES); do $(MAKE) --no-print-directory -C "$$($(call dir_for,$$s))" down || exit 1; done
+	@for s in $(SERVICES); do \
+		r=$$($(SVC_FIELD) $$s region); \
+		$(MAKE) --no-print-directory -C "$$($(call dir_for,$$s))" $$([ -n "$$($(SVC_FIELD) $$s instance_of)" ] && echo "region-down r=$$r" || echo down) || exit 1; \
+	done
 
 ps: ## Containers on laba_network
 	@docker network inspect $(NETWORK) --format '{{range .Containers}}{{println .Name}}{{end}}' 2>/dev/null | sort

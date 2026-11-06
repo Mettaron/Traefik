@@ -88,8 +88,17 @@ def local_host(service: str) -> str:
     return field(service, "local_host") or f"{service}.localhost"
 
 
+def instance_of(service: str) -> str:
+    """The service this one is another instance of (`instance_of:`, the instance of a region), "" if none."""
+    return field(service, "instance_of")
+
+
 def repo_dir(service: str) -> pathlib.Path:
-    """Where the service's repo is cloned: Laba/<dir>/<service>, `dir:` defaulting to Services."""
+    """Where the service's repo is cloned: Laba/<dir>/<service>, `dir:` defaulting to Services; an instance is run
+    from the repo of the service it is an instance of."""
+    of = instance_of(service)
+    if of:
+        return repo_dir(of)
     return LABA / (field(service, "dir") or DEFAULT_DIR) / service
 
 
@@ -161,6 +170,11 @@ def check() -> list[str]:
             if member not in all_services:
                 problems.append(f"group {m.group(1)}: unknown service {member}")
     for s in all_services:
+        of = instance_of(s)
+        if of and (of not in all_services or instance_of(of)):
+            problems.append(f"{s}: instance_of {of} is not a service with a repo of its own")
+        if of and not field(s, "region"):
+            problems.append(f"{s}: an instance (instance_of) needs its region")
         for var, peer in keys(s).items():
             if peer not in all_services:
                 problems.append(f"{s}: keys: {var} points at unknown service {peer}")
