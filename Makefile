@@ -44,6 +44,7 @@ traefik-up: network gen ## Start (or update) Traefik, the shared Redis (laba_red
 	@echo "Traefik dashboard: http://traefik.localhost:$${TRAEFIK_DASHBOARD_PORT:-8080}/dashboard/"
 	@echo "Shared Redis: redis://laba_redis:6379 (services), 127.0.0.1:$${REDIS_PORT:-6379} (host)"
 	@echo "Redis UI (Redis Insight): http://redis.localhost"
+	@echo "Mails of development (Mailpit): http://mail.localhost, SMTP laba_mailpit:1025"
 
 traefik-down: ## Stop Traefik, the shared Redis and its UI
 	docker compose down

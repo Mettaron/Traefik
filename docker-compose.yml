@@ -72,6 +72,20 @@ services:
       - "traefik.http.routers.redisinsight.rule=Host(`redis.localhost`)"
       - "traefik.http.services.redisinsight.loadbalancer.server.port=5540"
 
+  # A mailbox of every email the services send in development (notification: MAILER_DSN=smtp://laba_mailpit:1025):
+  # nothing leaves the machine. http://mail.localhost; the mails are kept in memory, a restart empties it.
+  laba_mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: laba_mailpit
+    restart: unless-stopped
+    networks:
+      - laba_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mailpit.entrypoints=http"
+      - "traefik.http.routers.mailpit.rule=Host(`mail.localhost`)"
+      - "traefik.http.services.mailpit.loadbalancer.server.port=8025"
+
 volumes:
   laba_redisinsight:
     name: laba_redisinsight

@@ -59,6 +59,7 @@ front-api:
     ACCOUNT_API_KEY: account
     CMS_API_KEY: cms
     GAME_API_KEY: game
+    NOTIFICATION_API_KEY: notification
 
 # Galaxy-scale space game based on the Milky Way.
 game:
@@ -76,6 +77,13 @@ game-sol:
 cms:
   repo: Mettaron/Cms
   db_port: 55005
+
+# Emails and SMS of Laba (synchronously, or queued with status callbacks) and the subscriptions of the users.
+notification:
+  repo: Mettaron/Notification
+  db_port: 55007
+  keys:
+    CMS_API_KEY: cms
 
 # Public site (registration, devlog, development progress) and later the game: frontends over front-api.
 front:

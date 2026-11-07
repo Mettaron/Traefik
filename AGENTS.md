@@ -52,6 +52,8 @@ Laba/
 - **Спільний Redis** `laba_redis` (кеш `global_cache` між сервісами) — у `docker-compose.yml` поруч
   із Traefik; сервіси звертаються до нього `redis://laba_redis:6379`. Лише кеш, без збереження на диск.
   Панель — Redis Insight `laba_redisinsight` на `redis.localhost`.
+- **Пошта розробки** `laba_mailpit` (Mailpit) — там само: усі листи сервісів у dev ловить вона (`smtp://laba_mailpit:1025`),
+  нічого не виходить назовні; скринька — `mail.localhost`.
 
 ## Перевірка
 
