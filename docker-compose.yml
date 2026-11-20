@@ -8,7 +8,7 @@ networks:
 
 services:
   laba_traefik:
-    image: traefik:v3
+    image: traefik:v3.7.19
     container_name: laba_traefik
     restart: unless-stopped
     security_opt:
@@ -35,7 +35,7 @@ services:
   # the others read. Services reach it on laba_network: REDIS_CACHE_DSN=redis://laba_redis:6379.
   # A cache only: nothing is saved to disk, a restart starts it empty.
   laba_redis:
-    image: redis:7.2-alpine
+    image: redis:8.8.4-alpine
     container_name: laba_redis
     restart: unless-stopped
     command: ["redis-server", "--save", "", "--appendonly", "no"]
@@ -52,7 +52,7 @@ services:
   # Web UI of laba_redis: keys, values, TTL, edit/delete. http://redis.localhost
   # The laba_redis connection is preconfigured (RI_REDIS_*); its settings are kept in a volume.
   laba_redisinsight:
-    image: redis/redisinsight:latest
+    image: redis/redisinsight:3.10.1
     container_name: laba_redisinsight
     restart: unless-stopped
     depends_on:
@@ -75,7 +75,7 @@ services:
   # A mailbox of every email the services send in development (notification: MAILER_DSN=smtp://laba_mailpit:1025):
   # nothing leaves the machine. http://mail.localhost; the mails are kept in memory, a restart empties it.
   laba_mailpit:
-    image: axllent/mailpit:v1.27
+    image: axllent/mailpit:v1.34.0
     container_name: laba_mailpit
     restart: unless-stopped
     networks:
