@@ -39,12 +39,13 @@ network: ## Create laba_network if it does not exist
 gen: ## Generate the Traefik aliases and staging fallback routers from services.yaml
 	@python3 bin/gen-traefik
 
-traefik-up: network gen ## Start (or update) Traefik, the shared Redis (laba_redis) and its UI: used by all services
+traefik-up: network gen ## Start (or update) Traefik, the shared Redis (laba_redis), the broker (laba_rabbitmq) and their UIs: used by all services
 	docker compose up -d
 	@echo "Traefik dashboard: http://traefik.localhost:$${TRAEFIK_DASHBOARD_PORT:-8080}/dashboard/"
 	@echo "Shared Redis: redis://laba_redis:6379 (services), 127.0.0.1:$${REDIS_PORT:-6379} (host)"
 	@echo "Redis UI (Redis Insight): http://redis.localhost"
 	@echo "Mails of development (Mailpit): http://mail.localhost, SMTP laba_mailpit:1025"
+	@echo "Message broker (RabbitMQ): amqp://laba_rabbitmq:5672 (services), UI http://rabbitmq.localhost"
 
 traefik-down: ## Stop Traefik, the shared Redis and its UI
 	docker compose down

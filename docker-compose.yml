@@ -86,6 +86,38 @@ services:
       - "traefik.http.routers.mailpit.rule=Host(`mail.localhost`)"
       - "traefik.http.services.mailpit.loadbalancer.server.port=8025"
 
+  # The message broker of the events between services (RabbitMQ, AMQP; Symfony Messenger: symfony/amqp-messenger): a
+  # service publishes to an exchange of its events (profile.events of auth), every service that follows them binds a
+  # queue of its own to it. The messages are kept on disk (a volume): a restart loses none. Services:
+  # amqp://<user>:<password>@laba_rabbitmq:5672/%2f (EVENTS_TRANSPORT_DSN); management UI: http://rabbitmq.localhost.
+  # The credentials of development are those of .env (RABBITMQ_USER, RABBITMQ_PASSWORD), as the databases' root/root.
+  laba_rabbitmq:
+    image: rabbitmq:4.4.1-management-alpine
+    container_name: laba_rabbitmq
+    hostname: laba_rabbitmq # the data of RabbitMQ are kept per node name: a fixed one keeps them across recreations
+    restart: unless-stopped
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-laba}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD:-laba}
+    ports:
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672" # AMQP for clients on the host
+    volumes:
+      - laba_rabbitmq:/var/lib/rabbitmq
+    networks:
+      - laba_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.rabbitmq.entrypoints=http"
+      - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.localhost`)"
+      - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+
 volumes:
   laba_redisinsight:
     name: laba_redisinsight
+  laba_rabbitmq:
+    name: laba_rabbitmq

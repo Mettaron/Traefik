@@ -61,6 +61,14 @@ Laba/
 - **Спільний Redis** `laba_redis` (кеш `global_cache` між сервісами) — у `docker-compose.yml` поруч
   із Traefik; сервіси звертаються до нього `redis://laba_redis:6379`. Лише кеш, без збереження на диск.
   Панель — Redis Insight `laba_redisinsight` на `redis.localhost`.
+- **Брокер подій** `laba_rabbitmq` (RabbitMQ 4) — там само: події між сервісами (Symfony Messenger,
+  `symfony/amqp-messenger`, PHP-розширення `amqp`), повідомлення на диску (том `laba_rabbitmq`); панель —
+  `rabbitmq.localhost`, облікові дані розробки — `.env` (`RABBITMQ_USER` / `RABBITMQ_PASSWORD`), сервіси —
+  `EVENTS_TRANSPORT_DSN=amqp://laba:laba@laba_rabbitmq:5672/%2f`. Будь-яка подія між сервісами — лише через
+  `laba/event-bundle`: transactional outbox у джерела (подія в тій самій транзакції, що й зміна; детермінований ключ —
+  дубль неможливий) і idempotent consumer (inbox) у підписника. Підписати сервіс: `laba_event.inbox.subscriptions`
+  (своя черга `<service>.<що>`), обробник класу події з клієнтського бандла джерела, worker споживає
+  `laba_event.<exchange>`; деталі — `docs/index.md` бандла.
 - **Пошта розробки** `laba_mailpit` (Mailpit) — там само: усі листи сервісів у dev ловить вона (`smtp://laba_mailpit:1025`),
   нічого не виходить назовні; скринька — `mail.localhost`.
 
